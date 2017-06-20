@@ -57,7 +57,7 @@ class Tree:
 
         return self.roots
 
-#todo: can be done in O(n) with dict
+
 def to_index(post_cargo, array):
     """
     Takes two lists, i.e. post order and keyroots list,  that represent each node
@@ -67,7 +67,8 @@ def to_index(post_cargo, array):
     :param array: could be any list that holds nodes represented as values.
     :return: returns array with index based representation.
     """
-    return [post_cargo.index(i) for i in array]
+    post_cargo_dict = {k: v for v, k in enumerate(post_cargo)}
+    return [post_cargo_dict[i] for i in array]
 
 
 def to_tree(sentence):
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     s1 = en_nlp(u'The books he read at the time were sometimes beyond his reading capabilities, with parts of text he could not understand fully.')
     s2 = en_nlp('The movies he watched at the time were often beyond his comprehension, with scenes he could not completely understand.')
     s3 = en_nlp('The opponents he competed with at the time were typically beyond his abilities and had skills he could not match.')
-    s4 = en_nlp(u'The books he read at the time were sometimes beyond his reading capabilities and contained passages he could not understand.')
+    s4 = en_nlp(u'The books he read at the time were never beyond his reading capabilities and contained passages he could not understand.')
 
     docs = [s1, s2, s3, s4]
 
