@@ -1,6 +1,6 @@
 import numpy as np
 import spacy
-import wikipedia
+#import wikipedia
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
@@ -102,12 +102,12 @@ def insert(a):
 
 def update(a, b):
 
-    if a.similarity(b) == 1:
+    if a == b:
         return 0
-    elif a.similarity(b) == 0 or 1./(a.similarity(b)) > 9:
+    elif a.similarity(b) == 0:
         return 9
     else:
-        return abs(1./(a.similarity(b)))
+        return min(abs(1./(a.similarity(b))), 9)
 
 #todo: comments
 def distance(A, B, insert_cost, remove_cost, update_cost):
@@ -179,4 +179,33 @@ def distance(A, B, insert_cost, remove_cost, update_cost):
     return treedists[-1][-1]
 
 
+if __name__ == "__main__":
+    s1 = en_nlp(u'The books he read at the time were sometimes beyond his reading capabilities, with parts of text he could not understand fully.')
+    s2 = en_nlp('The movies he watched at the time were often beyond his comprehension, with scenes he could not completely understand.')
+    s3 = en_nlp('The opponents he competed with at the time were typically beyond his abilities and had skills he could not match.')
+    s4 = en_nlp(u'The books he read at the time were sometimes beyond his reading capabilities and contained passages he could not understand.')
 
+    docs = [s1, s2, s3, s4]
+
+    A = to_tree(s1)
+    B = to_tree(s1)
+    d = distance(A, B, insert, remove, update)
+    print("Distance:")
+    print(d)
+
+    scores = np.zeros((len(docs), len(docs)))
+
+    for a in range(len(docs)):
+        for b in range(a, len(docs)):
+            scores[(a, b)] = distance(to_tree(docs[a]), to_tree(docs[b]), insert, remove, update)
+
+
+    scores_T = deepcopy(scores)
+    np.fill_diagonal(scores_T, 0)
+    scores_T = scores_T.T
+    visu_scores = scores + scores_T
+
+    plt.matshow(visu_scores)
+    plt.colorbar()
+
+    plt.show()
