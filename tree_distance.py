@@ -7,6 +7,12 @@ from copy import deepcopy
 en_nlp = spacy.load('en_core_web_md')
 
 class Tree:
+    """
+    Builds a tree that provides the keyroots() and l() methods as explained in the
+    Zhang et al. paper.
+
+    """
+
     def __init__(self, cargo, children=None, lleave=None):
         self.cargo = cargo
         self.lleave = lleave
@@ -51,12 +57,23 @@ class Tree:
 
         return self.roots
 
-
+#todo: can be done in O(n) with dict
 def to_index(post_cargo, array):
+    """
+    Takes two lists, i.e. post order and keyroots list,  that represent each node
+    with its value and returns an array with index based representation of array.
+
+    :param post_cargo: must be post order representation of the tree.
+    :param array: could be any list that holds nodes represented as values.
+    :return: returns array with index based representation.
+    """
     return [post_cargo.index(i) for i in array]
 
 
 def to_tree(sentence):
+    """
+    Takes a sentence in the spacy document representation and returns a Tree class object.
+    """
     root = sentence[0]
     while root != root.head:
         root = root.head
@@ -74,6 +91,7 @@ def to_tree(sentence):
     return recurse(root)
 
 
+#Some arbitrary distance functions for testing purposes.
 def remove(a):
     return 5
 
@@ -91,7 +109,18 @@ def update(a, b):
     else:
         return abs(1./(a.similarity(b)))
 
+#todo: comments
 def distance(A, B, insert_cost, remove_cost, update_cost):
+    """
+    Implements Zhang et al. tree edit distance algorithm
+
+    :param A: Tree class object (see ln 9)
+    :param B: Tree class object
+    :param insert_cost: spacy node -> real number
+    :param remove_cost: spacy node -> real number
+    :param update_cost: spacy node, spacy node -> real number
+    :return: distance matrix
+    """
     An, Bn = A.post_order_cargo(), B.post_order_cargo()
     Al, Bl = to_index(An, A.l()), to_index(Bn, B.l())
     Ak, Bk = to_index(An, A.keyroots()), to_index(Bn, B.keyroots())
@@ -99,6 +128,14 @@ def distance(A, B, insert_cost, remove_cost, update_cost):
     Bk.sort()
     treedists = np.zeros((len(An), len(Bn)), float)
     def treedist(i, j):
+        """
+        This part mostly comes from:
+        https://github.com/timtadh/zhang-shasha/blob/master/zss/compare.py
+
+        :param i:
+        :param j:
+        :return:
+        """
 
         m = i - Al[i] + 2
         n = j - Bl[j] + 2
@@ -142,41 +179,4 @@ def distance(A, B, insert_cost, remove_cost, update_cost):
     return treedists[-1][-1]
 
 
-ny = en_nlp(wikipedia.page("New York").content[:6000])
-chi = en_nlp(wikipedia.page("Chicago").content[:6000])
-la = en_nlp(wikipedia.page("Los_Angeles").content[:6000])
-ho = en_nlp(wikipedia.page("Houston").content[:6000])
-#pho = en_nlp(wikipedia.page("Phoenix").content)
 
-
-gor = en_nlp(wikipedia.page("Gorilla").content[:6000])
-hor = en_nlp(wikipedia.page("Horse").content[:6000])
-#rab = en_nlp(wikipedia.page("Rabbit").content[:1800])
-tig = en_nlp(wikipedia.page("Tiger").content[:6000])
-moo = en_nlp(wikipedia.page("Moose").content[:6000])
-
-articles = [ny, chi, la, ho, gor, hor, tig, moo]
-scores = np.zeros((len(articles), len(articles)))
-#article_trees = [[to_tree(s) for s in a.sents] for a in articles]
-
-
-for i in range(len(articles)):
-    for j in range(i, len(articles)):
-        curr_score = 0
-        for k in articles[i].sents:
-            for l in articles[j].sents:
-                curr_score += distance(to_tree(k), to_tree(l), insert, remove, update)
-        print(curr_score)
-        scores[(i, j)] = curr_score
-
-print(scores)
-
-scores_T = deepcopy(scores)
-np.fill_diagonal(scores_T, 0)
-scores_T = scores_T.T
-visu_scores = scores + scores_T
-
-plt.matshow(visu_scores)
-plt.colorbar()
-
-plt.show()
