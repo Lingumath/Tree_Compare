@@ -1,11 +1,10 @@
 import numpy as np
 import spacy
-#import wikipedia
+import wikipedia
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
 en_nlp = spacy.load('en_core_web_md')
-#de_nlp = spacy.load('de')
 
 class Tree:
     """
@@ -94,28 +93,22 @@ def to_tree(sentence):
 
 
 #Some arbitrary distance functions for testing purposes.
-def is_noun(tag):
-    if tag=="PROPN" or tag=="NOUN" or tag=="PRON":
-        return True
-    else:
-        return False
-
 def remove(a):
-    return 1
+    return 5
 
 
 def insert(a):
-    return 1
+    return 5
 
 
 def update(a, b):
-    pos_a = a.pos_
-    pos_b = b.pos_
 
-    if pos_a == pos_b or (is_noun(pos_a) and is_noun(pos_b)):
-        return (1-round((a.similarity(b)), 4))*0.5
+    if a == b:
+        return 0
+    elif a.similarity(b) == 0:
+        return 9
     else:
-        return (1-round((a.similarity(b)), 4))*2
+        return min(abs(1./(a.similarity(b))), 9)
 
 #todo: comments
 def distance(A, B, insert_cost, remove_cost, update_cost):
@@ -188,38 +181,35 @@ def distance(A, B, insert_cost, remove_cost, update_cost):
 
 
 if __name__ == "__main__":
+    ny = en_nlp(wikipedia.page("New York").content[:6000])
+    chi = en_nlp(wikipedia.page("Chicago").content[:6000])
+    la = en_nlp(wikipedia.page("Los_Angeles").content[:6000])
+    ho = en_nlp(wikipedia.page("Houston").content[:6000])
+    # pho = en_nlp(wikipedia.page("Phoenix").content)
 
-    s0 = en_nlp(u'Tim likes apples.')
 
-    s1 = en_nlp(u'I like apples.')
+    gor = en_nlp(wikipedia.page("Gorilla").content[:6000])
+    hor = en_nlp(wikipedia.page("Horse").content[:6000])
+    # rab = en_nlp(wikipedia.page("Rabbit").content[:1800])
+    tig = en_nlp(wikipedia.page("Tiger").content[:6000])
+    moo = en_nlp(wikipedia.page("Moose").content[:6000])
 
-    s2 = en_nlp(u'Tim likes apples and berries.')
+    articles = [ny, chi, la, ho, gor, hor, tig, moo]
+    scores = np.zeros((len(articles), len(articles)))
+    # article_trees = [[to_tree(s) for s in a.sents] for a in articles]
 
-    s3 = en_nlp(u'Tim is enjoying his apples.')
 
-    s4 = en_nlp(u'Tim truly likes apples.')
+    for i in range(len(articles)):
+        for j in range(i, len(articles)):
+            curr_score = 0
+            for k in articles[i].sents:
+                for l in articles[j].sents:
+                    curr_score += distance(to_tree(k), to_tree(l), insert, remove, update)
+            print(curr_score)
+            scores[(i, j)] = curr_score
 
-    s5 = en_nlp(u'Tim likes delicious apples.')
+    print(scores)
 
-    s6 = en_nlp(u'Tim truly likes delicious apples.')
-
-    s7 = en_nlp(u'Tim does not like delicious apples.')
-
-    s8 = en_nlp(u'Tim hates delicious apples.')
-
-    docs = [s0, s1, s2, s3, s4, s5, s6, s7, s8]
-
-    A = to_tree(s1)
-    B = to_tree(s1)
-    d = distance(A, B, insert, remove, update)
-    print("Distance:")
-    print(d)
-
-    scores = np.zeros((len(docs), len(docs)))
-
-    for a in range(len(docs)):
-        for b in range(a, len(docs)):
-            scores[(a, b)] = distance(to_tree(docs[a]), to_tree(docs[b]), insert, remove, update)
 
     scores_T = deepcopy(scores)
     np.fill_diagonal(scores_T, 0)
@@ -230,36 +220,3 @@ if __name__ == "__main__":
     plt.colorbar()
 
     plt.show()
-
-    # ger_v_ger = 0
-    # eng_v_eng = 0
-    # ger_v_all = 0
-    # eng_v_all = 0
-    #
-    # for n, i in enumerate(visu_scores):
-    #     v_ger = sum(i[:8])
-    #     v_eng = sum(i[8:])
-    #     v_all = sum(i)
-    #
-    #     print("####################")
-    #     print('#### Sentence ', n, ' ####')
-    #     print(v_ger, " v German")
-    #     print(v_eng, " v English")
-    #     print(v_all, " v All")
-    #
-    #     if n < 8:
-    #         ger_v_ger += v_ger
-    #         ger_v_all += v_all
-    #     else:
-    #         eng_v_eng += v_eng
-    #         eng_v_all += v_all
-    #
-    # print("##### G v G #####")
-    # print(ger_v_ger)
-    # print("##### E v E #####")
-    # print(eng_v_eng)
-    # print("##### G v A #####")
-    # print(ger_v_all)
-    # print("##### E v A #####")
-    # print(eng_v_all)
-

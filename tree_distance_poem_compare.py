@@ -1,11 +1,11 @@
 import numpy as np
 import spacy
-#import wikipedia
 import matplotlib.pyplot as plt
 from copy import deepcopy
+from os import walk
 
 en_nlp = spacy.load('en_core_web_md')
-#de_nlp = spacy.load('de')
+de_nlp = spacy.load('de')
 
 class Tree:
     """
@@ -109,13 +109,18 @@ def insert(a):
 
 
 def update(a, b):
-    pos_a = a.pos_
-    pos_b = b.pos_
+    return 0
 
-    if pos_a == pos_b or (is_noun(pos_a) and is_noun(pos_b)):
-        return (1-round((a.similarity(b)), 4))*0.5
-    else:
-        return (1-round((a.similarity(b)), 4))*2
+    # if a.text == b.text:
+    #     return 0
+    #
+    # pos_a = a.pos_
+    # pos_b = b.pos_
+    #
+    # if pos_a == pos_b or (is_noun(pos_a) and is_noun(pos_b)):
+    #     return (1-round((a.similarity(b)), 4))*2
+    # else:
+    #     return (1-round((a.similarity(b)), 4))*2
 
 #todo: comments
 def distance(A, B, insert_cost, remove_cost, update_cost):
@@ -188,38 +193,44 @@ def distance(A, B, insert_cost, remove_cost, update_cost):
 
 
 if __name__ == "__main__":
+    dirs = walk("poems")
+    texts = []
+    for d in dirs:
+        for f in d[2]:
+            texts.append(open("poems/" + f, "r", encoding="utf8").read())
 
-    s0 = en_nlp(u'Tim likes apples.')
 
-    s1 = en_nlp(u'I like apples.')
+    articles = [de_nlp(t) for t in texts[:11]] + [en_nlp(t) for t in texts[11:]]
+    scores = np.zeros((len(articles), len(articles)))
+    # article_trees = [[to_tree(s) for s in a.sents] for a in articles]
 
-    s2 = en_nlp(u'Tim likes apples and berries.')
 
-    s3 = en_nlp(u'Tim is enjoying his apples.')
+    for i in range(len(articles)):
+        for j in range(i, len(articles)):
+            all_score = []
+            curr_score = 0
+            arts_in_i = 0
+            arts_in_j = 0
+            cnt_j = True
+            for k in articles[i].sents:
+                arts_in_i += 1
+                for l in articles[j].sents:
+                    if cnt_j:
+                        arts_in_j += 1
+                    all_score.append(distance(to_tree(k), to_tree(l), insert, remove, update))
+                cnt_j = False
 
-    s4 = en_nlp(u'Tim truly likes apples.')
+            print(all_score)
+            print("------")
+            curr_score = sum(all_score)/(arts_in_j*arts_in_i)
+            #curr_score = sum(sorted(all_score)[:min(arts_in_i, arts_in_j, 5)])
+            #curr_score = sum(all_score)
 
-    s5 = en_nlp(u'Tim likes delicious apples.')
+            scores[(i, j)] = curr_score
 
-    s6 = en_nlp(u'Tim truly likes delicious apples.')
+    print(scores)
 
-    s7 = en_nlp(u'Tim does not like delicious apples.')
 
-    s8 = en_nlp(u'Tim hates delicious apples.')
-
-    docs = [s0, s1, s2, s3, s4, s5, s6, s7, s8]
-
-    A = to_tree(s1)
-    B = to_tree(s1)
-    d = distance(A, B, insert, remove, update)
-    print("Distance:")
-    print(d)
-
-    scores = np.zeros((len(docs), len(docs)))
-
-    for a in range(len(docs)):
-        for b in range(a, len(docs)):
-            scores[(a, b)] = distance(to_tree(docs[a]), to_tree(docs[b]), insert, remove, update)
 
     scores_T = deepcopy(scores)
     np.fill_diagonal(scores_T, 0)
@@ -237,8 +248,8 @@ if __name__ == "__main__":
     # eng_v_all = 0
     #
     # for n, i in enumerate(visu_scores):
-    #     v_ger = sum(i[:8])
-    #     v_eng = sum(i[8:])
+    #     v_ger = sum(i[:10])
+    #     v_eng = sum(i[10:])
     #     v_all = sum(i)
     #
     #     print("####################")
@@ -247,7 +258,7 @@ if __name__ == "__main__":
     #     print(v_eng, " v English")
     #     print(v_all, " v All")
     #
-    #     if n < 8:
+    #     if n < 10:
     #         ger_v_ger += v_ger
     #         ger_v_all += v_all
     #     else:
@@ -262,4 +273,3 @@ if __name__ == "__main__":
     # print(ger_v_all)
     # print("##### E v A #####")
     # print(eng_v_all)
-
